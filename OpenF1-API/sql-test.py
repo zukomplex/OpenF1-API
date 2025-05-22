@@ -14,7 +14,7 @@ conn = mysql.connector.connect(
 
 cursor = conn.cursor()
 
-# Tabellen erstellen
+# Tabellen erstellen --> ´interval´ muss mit Backticks geschrieben werden weil Befehl in SQL sonst schon vergeben
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS positions (
    date DATETIME(3),
