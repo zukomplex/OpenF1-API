@@ -1,13 +1,8 @@
 from urllib.request import urlopen
 import json
 import mysql.connector
-
-# List die Daten über URL aus der API ein
-response = urlopen('https://api.openf1.org/v1/position?meeting_key=1217&driver_number=40&position<=3')
-position = json.loads(response.read().decode('utf-8'))
-
-response = urlopen('https://api.openf1.org/v1/intervals?session_key=9165&interval<0.005')
-intervals = json.loads(response.read().decode('utf-8'))
+import time
+from datetime import datetime
 
 # Verbindung zur DB
 conn = mysql.connector.connect(
@@ -41,33 +36,48 @@ CREATE TABLE IF NOT EXISTS intervals (
 )
 """)
 
-# Daten in Tabelle einfügen
-for item in position:
-    cursor.execute("""
-    INSERT INTO positions (date, driver_number, meeting_key, position, session_key)
-    VALUES(%s, %s, %s, %s, %s)
-    ON DUPLICATE KEY UPDATE
-        date = VALUES(date),
-        driver_number = VALUES(driver_number),
-        meeting_key = VALUES(meeting_key),
-        position = VALUES(position),
-        session_key = VALUES(session_key)
-    """, (item["date"], item["driver_number"], item["meeting_key"], item["position"], item["session_key"]))
+while True:
+    try:
+        
+        # List die Daten über URL aus der API ein
+        response = urlopen('https://api.openf1.org/v1/position')
+        position = json.loads(response.read().decode('utf-8'))
 
-for item in intervals:
-    cursor.execute("""
-    INSERT INTO intervals (date, driver_number, gap_to_leader, `interval`, meeting_key, session_key)
-    VALUES(%s, %s, %s, %s, %s, %s)
-    ON DUPLICATE KEY UPDATE
-        date = VALUES(date),
-        driver_number = VALUES(driver_number),
-        gap_to_leader = VALUES(gap_to_leader),
-        `interval` = VALUES(`interval`),
-        meeting_key = VALUES(meeting_key),
-        session_key = VALUES(session_key)
-    """, (item["date"], item["driver_number"], item["gap_to_leader"], item["interval"], item["meeting_key"], item["session_key"]))
+        response = urlopen('https://api.openf1.org/v1/intervals')
+        intervals = json.loads(response.read().decode('utf-8'))
 
-# Änderungen speichern und Verbindung schließen
-conn.commit()
-cursor.close()
-conn.close()
+        # Daten in Tabellen einfügen
+        for item in position:
+            cursor.execute("""
+            INSERT IGNORE INTO positions (date, driver_number, meeting_key, position, session_key)
+            VALUES (%s, %s, %s, %s, %s)
+            """, (
+                item["date"],
+                item["driver_number"],
+                item["meeting_key"],
+                item["position"],
+                item["session_key"]
+            ))
+
+        for item in intervals:
+            cursor.execute("""
+            INSERT IGNORE INTO intervals (date, driver_number, gap_to_leader, `interval`, meeting_key, session_key)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """, (
+                item["date"],
+                item["driver_number"],
+                item["gap_to_leader"],
+                item["interval"],
+                item["meeting_key"],
+                item["session_key"]
+            ))
+
+        # Änderungen speichern und Verbindung schließen
+        conn.commit()
+        print(f"{datetime.now()} - neue Daten gespeichert.")
+
+    except Exception as e:
+        print("Fehler beim Abruf oder Einfügen!", e)
+
+    # Warten bis zur nächsten Abfrage
+    time.sleep(3)
