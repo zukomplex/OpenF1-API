@@ -80,4 +80,4 @@ while True:
         print("Fehler beim Abruf oder Einfügen!", e)
 
     # Warten bis zur nächsten Abfrage
-    time.sleep(3)
+    time.sleep(4)
