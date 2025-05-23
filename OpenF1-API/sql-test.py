@@ -72,7 +72,7 @@ while True:
                 item["session_key"]
             ))
 
-        # Änderungen speichern und Verbindung schließen
+        # Änderungen speichern
         conn.commit()
         print(f"{datetime.now()} - neue Daten gespeichert.")
 
