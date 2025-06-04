@@ -34,3 +34,5 @@ if driver_entries:
 
 else:
     print("Keine Daten eingefügt!")
+
+print("fertig")
